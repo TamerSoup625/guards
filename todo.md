@@ -1,0 +1,3 @@
+- Assert types
+- Unit testing
+- Publish to PyPi
