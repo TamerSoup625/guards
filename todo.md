@@ -1,3 +1,4 @@
+- Put README extra features into examples
 - Assert types
 - Unit testing
 - Publish to PyPi
