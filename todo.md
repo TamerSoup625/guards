@@ -1,4 +1,3 @@
-- Put README extra features into examples
-- Assert types
-- Unit testing
+- Add types assertion in the code
+- Unit testing for the library
 - Publish to PyPi
