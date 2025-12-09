@@ -1,3 +1,2 @@
-- Add types assertion in the code
 - Unit testing for the library
 - Publish to PyPi

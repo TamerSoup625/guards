@@ -84,9 +84,16 @@ class UnfinishedGuardError(RuntimeError): """Attempt to access the outcome of a 
 
 class UnhandledWarning(RuntimeWarning): pass
 class LetWarning(SyntaxWarning): pass
+class NotOutcomeWarning(SyntaxWarning): pass
 
 class LetFailure(): pass
 LET_FAILURE = LetFailure()
+
+
+def _test_callable(f):
+    """Raises a TypeError if `f` is not callable"""
+    if not callable(f):
+        raise TypeError(f"'{type(f).__name__}' object is not callable")
 
 
 class MustUse:
@@ -355,9 +362,12 @@ class Ok(Generic[T]):
         item = guard(my_list.index, ValueError)(index).or_raise(ClientError(f"Item at index {index} doesn't exist."))
         ```
         """
+        if (not isinstance(exc, BaseException)) and exc is not None:
+            raise TypeError("exceptions must derive from BaseException")
         return self.__t
 
-    def or_else_do(self, f, *args, **kwargs) -> T:
+    #                    This ensures lambda arguments are typed
+    def or_else_do(self, f: Callable[Concatenate[E, P], R], *args, **kwargs) -> T:
         """
         Returns the contained `Ok` value or the return value of a call to `f`.
 
@@ -377,6 +387,7 @@ class Ok(Generic[T]):
         Something happened - - - extra text
         ```
         """
+        _test_callable(f)
         return self.__t
     
 
@@ -416,6 +427,7 @@ class Ok(Generic[T]):
         assert Error(AssertionError("something wrong")).run(on_ok=f1, on_error=f2) == "error: something wrong"
         ```
         """
+        _test_callable(on_error)
         return on_ok(self.__t)
 
     def then_run(self, f: Callable[Concatenate[T, P], Outcome[NT, NE]], *args: P.args, **kwargs: P.kwargs) -> Outcome[NT, NE]:
@@ -435,7 +447,7 @@ class Ok(Generic[T]):
         """
         return f(self.__t, *args, **kwargs)
 
-    def else_run(self, f: Callable, *args, **kwargs) -> Self:
+    def else_run(self, f: Callable[Concatenate[E, P], Outcome[NT, NE]], *args, **kwargs) -> Self:
         """
         If `self` is `Error`, returns the call to `f` with the contained `Error` exception, otherwise return the `Ok` object untouched. Extra arguments can be passed to `f` from this function.
 
@@ -455,6 +467,7 @@ class Ok(Generic[T]):
         number_maybe = guard(int, ValueError)(string_in) or guard(float, ValueError)(string_in)
         ```
         """
+        _test_callable(f)
         return self
     
 
@@ -565,6 +578,8 @@ class Error(Generic[E]):
 
 
     def __init__(self, e: E) -> None:
+        if not isinstance(e, BaseException):
+            raise TypeError(f"Error() argument must be an Exception, not '{type(e).__name__}'")
         self.__e = e
 
 
@@ -764,9 +779,10 @@ class Error(Generic[E]):
         assert Error(AssertionError("something wrong")).run(on_ok=f1, on_error=f2) == "error: something wrong"
         ```
         """
+        _test_callable(on_ok)
         return on_error(self.__e)
 
-    def then_run(self, f: Callable, *args, **kwargs) -> Self:
+    def then_run(self, f: Callable[Concatenate[T, P], Outcome[NT, NE]], *args, **kwargs) -> Self:
         """
         If `self` is `Ok`, returns the call to `f` with the contained `Ok` value, otherwise return the `Error` object untouched. Extra arguments can be passed to `f` from this function.
 
@@ -781,6 +797,7 @@ class Error(Generic[E]):
         assert iserror(safe_get(mat, 1).then_run(safe_get, 2))
         ```
         """
+        _test_callable(f)
         return self
 
     def else_run(self, f: Callable[Concatenate[E, P], Outcome[NT, NE]], *args: P.args, **kwargs: P.kwargs) -> Outcome[NT, NE]:
@@ -806,7 +823,7 @@ class Error(Generic[E]):
         return f(self.__e, *args, **kwargs)
     
 
-    def then(self, f: Callable, *args, **kwargs) -> Self:
+    def then(self, f: Callable[Concatenate[T, P], R], *args, **kwargs) -> Self:
         """
         Apply a function on the contained `Ok` value, otherwise return the `Error` object untouched. Extra arguments can be passed to `f` from this function.
 
@@ -820,9 +837,10 @@ class Error(Generic[E]):
         assert Error(exc).then(str.find, "e") == exc # str.find is never called here
         ```
         """
+        _test_callable(f)
         return self
 
-    def map(self, f: Callable, *args, **kwargs) -> Self:
+    def map(self, f: Callable[Concatenate[T, P], R], *args, **kwargs) -> Self:
         """
         Alias of `Outcome.then(...)`.
 
@@ -838,6 +856,7 @@ class Error(Generic[E]):
         assert Error(exc).map(str.find, "e") == exc # str.find is never called here
         ```
         """
+        _test_callable(f)
         return self
 
 
@@ -932,6 +951,10 @@ def guard(f: Callable[P, T], *against: type[E]) -> Callable[P, Outcome[T, E]]:
     TypeError: float() argument must be a string or a real number, not 'list'
     ```
     """
+    _test_callable(f)
+    for x in against:
+        if (not isinstance(x, type(type))) or (not issubclass(x, BaseException)):
+            raise TypeError(f"Exception to guard against must be a type subclass of BaseException ('{repr(x)}' is not assignable to 'type[BaseException]').")
     if against == ():
         warn("Guard does not contain any exception to guard against.", SyntaxWarning, stacklevel=2)
     def inner_func(*args: P.args, **kwargs: P.kwargs) -> Outcome[T, E]:
@@ -1033,6 +1056,9 @@ def guard_context(*against, return_must_use = True):
 
     **Note**: The context's outcome (`GuardContextBase.outcome`) cannot be accessed inside of the context itself.
     """
+    for x in against:
+        if (not isinstance(x, type(type))) or (not issubclass(x, BaseException)):
+            raise TypeError(f"Exception to guard against must be a type subclass of BaseException ('{repr(x)}' is not assignable to 'type[BaseException]').")
     if against == ():
         warn("Guard does not contain any exception to guard against.", SyntaxWarning, stacklevel=2)
     if return_must_use:
@@ -1057,6 +1083,11 @@ def isok(outcome: Outcome[T, E]) -> TypeIs[Ok[T]]:
         reveal_type(outcome) # Ok[T]
     ```
     """
+    if not isinstance(outcome, (Ok, Error)):
+        warn(
+                f'`isok` recieved "{repr(outcome)}", which is neither `Ok` nor `Error`. Returning `False`.',
+                NotOutcomeWarning, stacklevel=2
+        )
     return isinstance(outcome, Ok)
 
 
@@ -1077,6 +1108,11 @@ def iserror(outcome: Outcome[T, E]) -> TypeIs[Error[E]]:
         reveal_type(outcome) # Error[E]
     ```
     """
+    if not isinstance(outcome, (Ok, Error)):
+        warn(
+                f'`iserror` recieved "{repr(outcome)}", which is neither `Ok` nor `Error`. Returning `False`.',
+                NotOutcomeWarning, stacklevel=2
+        )
     return isinstance(outcome, Error)
 
 
@@ -1097,14 +1133,24 @@ def outcome_collect(iterable: Iterable[Outcome[T, E]]) -> Outcome[list[T], E]:
     """
     result = []
     for x in iterable:
+        if not isinstance(x, (Ok, Error)):
+            raise TypeError(f"'outcome_collect' expected an 'Ok | Error' inside 'iterable', got '{type(x).__name__}'")
         if iserror(x): return x
         result.append(x.ok)
     return Ok(result)
 
 
+def _iter_outcome_checking(iterable: Iterable[R]) -> Iterator[R]:
+    it = iter(iterable)
+    for x in it:
+        if not isinstance(x, (Ok, Error)):
+            raise TypeError(f"'outcome_partition' expected an 'Ok | Error' inside 'iterable', got '{type(x).__name__}'")
+        yield x
+
+
 def outcome_partition(iterable: Iterable[Outcome[T, E]]) -> tuple[Iterator[T], Iterator[E]]:
     """
-    Split an iterable of outcomes into an iterator of all `Ok`s’ contained values and an iterator of all `Error`s’ contained exceptions.
+    Split an iterable of outcomes into an iterator of all `Ok`s' contained values and an iterator of all `Error`s' contained exceptions.
 
     ```python
     strings = ["25", "42", "pizza"]
@@ -1117,11 +1163,11 @@ def outcome_partition(iterable: Iterable[Outcome[T, E]]) -> tuple[Iterator[T], I
         # We have to convert the iterator into an iterable
         # Or else iter(iterable) == iterable
         iter_list = list(iterable)
-        ok_iter = (x.ok for x in iter(iter_list) if isok(x))
-        error_iter = (x.error for x in iter(iter_list) if iserror(x))
+        ok_iter = (x.ok for x in _iter_outcome_checking(iter_list) if isok(x))
+        error_iter = (x.error for x in _iter_outcome_checking(iter_list) if iserror(x))
         return ok_iter, error_iter
-    ok_iter = (x.ok for x in iter(iterable) if isok(x))
-    error_iter = (x.error for x in iter(iterable) if iserror(x))
+    ok_iter = (x.ok for x in _iter_outcome_checking(iterable) if isok(x))
+    error_iter = (x.error for x in _iter_outcome_checking(iterable) if iserror(x))
     return ok_iter, error_iter
 
 
@@ -1164,9 +1210,15 @@ def outcome_do(iterable: Iterator[T]) -> Outcome[T, BaseException]:
 
     ***Warning***: Async generators are not supported.
     """
-    result = guard(next, DoFailure)(iterable)
+    result = guard(next, DoFailure, StopIteration)(iterable)
+    unit_iter_test = guard(next, StopIteration)(iterable)
+    if isok(unit_iter_test):
+        warn("Generator passed to 'outcome_do' contains more than one item. Make sure it uses 'Outcome's as iterators.", RuntimeWarning, stacklevel=2)
     if iserror(result):
-        value = result.error.value
+        err = result.error
+        if isinstance(err, StopIteration):
+            raise TypeError(f"Generator passed to 'outcome_do' is exhausted. Make sure it uses 'Outcome's as iterators.")
+        value = err.value
         return Error(value)
     return Ok(result.ok)
 
@@ -1200,6 +1252,9 @@ def force_guard(*against: type[E]) -> Callable[[Callable[P, T]], Callable[P, Out
         case Error(_): do_something_else()
     ```
     """
+    for x in against:
+        if (not isinstance(x, type(type))) or (not issubclass(x, BaseException)):
+            raise TypeError(f"Exception to guard against must be a type subclass of BaseException ('{repr(x)}' is not assignable to 'type[BaseException]').")
     if against == ():
         warn("Guard does not contain any exception to guard against.", SyntaxWarning, stacklevel=2)
     
