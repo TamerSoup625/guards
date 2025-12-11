@@ -188,8 +188,7 @@ class GuardContextBase(Generic[T, E]):
         if self.__current_return is False:
             raise UnfinishedGuardError("Cannot access context guard's Outcome inside of the context itself.")
         elif self.__current_return is True:
-            assert self.__ok_return is not None
-            return Ok(self.__ok_return)
+            return Ok(self.__ok_return) # type: ignore
         return Error(self.__current_return)
     
 
