@@ -96,7 +96,11 @@ numbers, errors = outcome_partition(guard(float, ValueError)(x) for x in my_list
 
 ## Installation
 
-`guards` is not yet available to PyPi. If you want to try `guards` you can download the `guards.py` file as a standalone.
+Install this library with `pip` like usual:
+
+```
+pip install guards
+```
 
 ## Summary
 
