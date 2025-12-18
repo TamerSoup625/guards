@@ -189,4 +189,4 @@ This is just the basic of error-handling. See the documentation or `examples.md`
 
 ## Contributing
 
-`todo.md` contains a short list of features to implement, which includes publishing the library to PyPi at the end.
+If you found a problem or want to contribute to this package, you can open a new [Issue](https://github.com/TamerSoup625/guards/issues) or [Pull Request](https://github.com/TamerSoup625/guards/pulls).

@@ -477,11 +477,11 @@ class Ok(Generic[T]):
         This function can be used to chain functions and methods without having to check for an error.
 
         ```python
-        assert Ok("Text").then(len) == 4
-        assert Ok("Text").then(str.find, "e") == 1
+        assert Ok("Text").then(len) == Ok(4)
+        assert Ok("Text").then(str.find, "e") == Ok(1)
         exc = Exception()
-        assert Error(exc).then(len) == exc # len is never called here
-        assert Error(exc).then(str.find, "e") == exc # str.find is never called here
+        assert Error(exc).then(len) == Error(exc) # len is never called here
+        assert Error(exc).then(str.find, "e") == Error(exc) # str.find is never called here
         ```
         """
         return Ok(f(self.__t, *args, **kwargs))
@@ -495,11 +495,11 @@ class Ok(Generic[T]):
         This function can be used to chain functions and methods without having to check for an error.
 
         ```python
-        assert Ok("Text").map(len) == 4
-        assert Ok("Text").map(str.find, "e") == 1
+        assert Ok("Text").map(len) == Ok(4)
+        assert Ok("Text").map(str.find, "e") == Ok(1)
         exc = Exception()
-        assert Error(exc).map(len) == exc # len is never called here
-        assert Error(exc).map(str.find, "e") == exc # str.find is never called here
+        assert Error(exc).map(len) == Error(exc) # len is never called here
+        assert Error(exc).map(str.find, "e") == Error(exc) # str.find is never called here
         ```
         """
         return Ok(f(self.__t, *args, **kwargs))
@@ -1127,7 +1127,8 @@ def outcome_collect(iterable: Iterable[Outcome[T, E]]) -> Outcome[list[T], E]:
 
     ```python
     assert outcome_collect([Ok(1), Ok(2), Ok(3)]) == Ok([1, 2, 3])
-    assert isinstance(outcome_collect([Ok(1), Error(TypeError()), Error(ValueError())]), TypeError)
+    outcome = outcome_collect([Ok(1), Error(TypeError()), Error(ValueError())])
+    assert iserror(outcome) and isinstance(outcome.error, TypeError)
     ```
     """
     result = []

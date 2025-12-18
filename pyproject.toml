@@ -4,11 +4,11 @@ build-backend = "hatchling.build"
 
 [project]
 name = "guards"
-version = "1.0.3"
+version = "1.0.4"
 authors = [
     { name="TamerSoup625", email="danielegiunta2007@gmail.com" },
 ]
-description = "An alternative to try/catch/else statements"
+description = "An alternative to try/except/else statements"
 readme = "readme.md"
 requires-python = ">=3.10"
 classifiers = [
