@@ -175,7 +175,7 @@ This is just the basic of error-handling. See the documentation or `examples.md`
 
 |Exceptions and Guards|Pure Result Values|
 |-|-|
-|Handling errors is the default|Propagating errors is the default|
+|Propagating errors is the default|Handling errors is the default|
 |✅Raised exceptions are all you need|❌Needs panics to work well|
 |✅Only the exceptions you care about are handled|❌Needs unwrapping the error even if you only care about a specific one|
 |✅Can be learned whenever you have to handle errors|❌Must be learned when writing or using a fallible function|
