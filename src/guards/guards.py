@@ -959,10 +959,8 @@ def guard(f: Callable[P, T], *against: type[E]) -> Callable[P, Outcome[T, E]]:
     def inner_func(*args: P.args, **kwargs: P.kwargs) -> Outcome[T, E]:
         try:
             ok = f(*args, **kwargs)
-        except BaseException as e:
-            if isinstance(e, against):
-                return Error(e)
-            raise
+        except against as e:
+            return Error(e)
         else:
             return Ok(ok)
     return inner_func
