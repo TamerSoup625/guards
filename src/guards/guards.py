@@ -389,6 +389,23 @@ class Ok(Generic[T]):
         _test_callable(f)
         return self.__t
     
+    #                    This ensures lambda arguments are typed
+    def or_else_lazy(self, f: Callable[P, R], *args, **kwargs) -> T:
+        """
+        Returns the contained `Ok` value or the return value of a call to `f`. Lazily-evaluated alternative to `Outcome.or_else`.
+
+        All extra arguments are passed to the call to `f`. Use `Outcome.or_else_do` if you want to use the contained `Error` exception from `f`.
+
+        ```python
+        my_list = []
+        assert Ok(12).or_else_lazy(my_list.append, "wrong") == 12 # list.append is never called
+        assert Error(Exception()).or_else_lazy(my_list.append, "right") == None # Returned by list.append
+        assert my_list == ["right"]
+        ```
+        """
+        _test_callable(f)
+        return self.__t
+
 
     def unpack(self) -> tuple[T, None]:
         """
@@ -740,6 +757,21 @@ class Error(Generic[E]):
         ```
         """
         return f(self.__e, *args, **kwargs)
+    
+    def or_else_lazy(self, f: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
+        """
+        Returns the contained `Ok` value or the return value of a call to `f`. Lazily-evaluated alternative to `Outcome.or_else`.
+
+        All extra arguments are passed to the call to `f`. Use `Outcome.or_else_do` if you want to use the contained `Error` exception from `f`.
+
+        ```python
+        my_list = []
+        assert Ok(12).or_else_lazy(my_list.append, "wrong") == 12 # list.append is never called
+        assert Error(Exception()).or_else_lazy(my_list.append, "right") == None # Returned by list.append
+        assert my_list == ["right"]
+        ```
+        """
+        return f(*args, **kwargs)
     
 
     def unpack(self) -> tuple[None, E]:

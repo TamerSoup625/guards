@@ -17,7 +17,7 @@ def normalized(self: Vector):
 
 ```python
 with guard(open, FileNotFoundError)("log.txt", "a")\
-    .or_else_do(lambda _: open("log.txt", "x")) as file:
+    .or_else_lazy(lambda: open("log.txt", "x")) as file:
     file.write("Hello!")
 ```
 

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "guards"
-version = "1.0.4"
+version = "1.1.0"
 authors = [
     { name="TamerSoup625", email="danielegiunta2007@gmail.com" },
 ]

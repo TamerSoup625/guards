@@ -72,6 +72,7 @@ class TestOrMethods:
         assert ok_obj.or_raise(ValueError()) is ok_val
         assert ok_obj.or_else("error") is ok_val
         assert ok_obj.or_else_do(lambda _: pytest.fail("or_else_do called on Ok value")) is ok_val
+        assert ok_obj.or_else_lazy(lambda: pytest.fail("or_else_do called on Ok value")) is ok_val
     
 
     def test_or_none_err(self, exc):
@@ -104,6 +105,18 @@ class TestOrMethods:
             return obj
         assert Error(exc).or_else_do(f) is obj
         with pytest.raises(TypeError): Ok(obj).or_else_do("function") # type: ignore
+        assert i == 1
+    
+
+    def test_or_else_lazy_err(self, exc):
+        i = 0
+        obj = [6, 2, 5]
+        def f():
+            nonlocal i
+            i += 1
+            return obj
+        assert Error(exc).or_else_lazy(f) is obj
+        with pytest.raises(TypeError): Ok(obj).or_else_lazy("function") # type: ignore
         assert i == 1
 
 
